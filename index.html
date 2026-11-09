@@ -574,7 +574,19 @@ function fillCorrect(q,v){
   const p=normalize(v).split(";").filter(Boolean);
   if(q.answers.length===1)return q.answers[0].some(a=>normalize(a)===normalize(v));
   if(p.length!==q.answers.length)return false;
-  return q.answers.every((g,i)=>g.some(a=>normalize(a)===normalize(p[i])));
+  const groups=q.unorderedAnswers||[];
+  const unordered=new Set(groups.flat());
+  const matches=(index,value)=>q.answers[index].some(answer=>normalize(answer)===value);
+  if(!p.every((value,index)=>unordered.has(index)||matches(index,value)))return false;
+  return groups.every(indices=>{
+    const remaining=indices.map(index=>p[index]);
+    return indices.every(index=>{
+      const found=remaining.findIndex(value=>matches(index,value));
+      if(found===-1)return false;
+      remaining.splice(found,1);
+      return true;
+    });
+  });
 }
 function isCorrect(q,v){return (q.type==="choice"||q.type==="truefalse")?v===q.answer:fillCorrect(q,v)}
 function answerText(q){return (q.type==="choice"||q.type==="truefalse")?(q.options.find(o=>o[0]===q.answer)||q.answer):esc(q.display_answer)}
